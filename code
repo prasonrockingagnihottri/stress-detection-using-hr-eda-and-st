@@ -1,0 +1,293 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
+
+# Read the CSV file
+dfa = pd.read_csv('/Users/prasonagnihottri/Downloads/HR.csv')
+
+# Set the index
+dfa.index = pd.date_range('2020-03-04', periods=len(dfa), freq='1S')
+
+# Resample HR to 4Hz
+dfa_resample = dfa.resample('0.25S').ffill()
+
+# Applying moving average filter
+rolling = dfa_resample.rolling(window=9)
+dfa_filtered = rolling.mean()
+
+# Select a subset of data for modeling
+dfa_filtered_subset = dfa_filtered[2800:2900]
+
+# Create the feature matrix X and target vector y
+X = np.arange(len(dfa_filtered_subset)).reshape(-1, 1)
+y = dfa_filtered_subset.iloc[:, 0]  # Assuming the HR column is the first column in the DataFrame
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Initialize and train the Random Forest regression model
+rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
+rf_model.fit(X_train, y_train)
+
+# Make predictions
+y_pred = rf_model.predict(X_test)
+
+# Plot the resampled HR and the predicted values
+plt.plot(X, y, color='blue', label='Resampled HR')
+plt.plot(X_test, y_pred, color='red', label='Predicted HR')
+plt.xlabel('Time (min)')
+plt.ylabel('HR (BPM)')
+plt.title('Resampled HR and Predicted Values (Random Forest)')
+plt.legend()
+plt.grid(alpha=0.5)
+plt.show()
+
+df1 = pd.read_csv('/Users/prasonagnihottri/Downloads/ST.csv')
+
+# Set the index
+df1.index = pd.date_range('2020-03-04', periods=len(df1), freq='0.25S')
+
+# Applying moving average filter
+rolling = df1.rolling(window=15)
+df1_filtered = rolling.mean()
+
+# Select a subset of data for modeling
+df1_filtered_subset = df1_filtered[2800:2900]
+
+# Create the feature matrix X and target vector y
+X = np.arange(len(df1_filtered_subset)).reshape(-1, 1)
+y = df1_filtered_subset.iloc[:, 0]  # Assuming the ST column is the first column in the DataFrame
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Initialize and train the Random Forest regression model
+rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
+rf_model.fit(X_train, y_train)
+
+# Make predictions
+y_pred = rf_model.predict(X_test)
+
+# Plot the filtered ST and the predicted values
+plt.plot(X, y, color='blue', label='Filtered ST')
+plt.plot(X_test, y_pred, color='orange', label='Predicted ST')  # Change color to orange
+plt.xlabel('Time (min)')
+plt.ylabel('ST (°C)')
+plt.title('Filtered ST and Predicted Values (Random Forest)')
+plt.legend()
+plt.grid(alpha=0.5)
+plt.show()
+
+df2 = pd.read_csv('/Users/prasonagnihottri/Downloads/EDA.csv')
+
+# Set the index
+df2.index = pd.date_range('2020-03-04', periods=len(df2), freq='0.25S')
+
+# Applying moving average filter
+rolling = df2.rolling(window=15)
+df2_filtered = rolling.mean()
+
+# Range corrected EDA - value - min/max-min
+df2_corrected = (df2_filtered - 0.237) / (0.45 - 0.237)
+
+# Select a subset of data for modeling
+df2_corrected_subset = df2_corrected[2800:2900]
+
+# Create the feature matrix X and target vector y
+X = np.arange(len(df2_corrected_subset)).reshape(-1, 1)
+y = df2_corrected_subset.iloc[:, 0]  # Assuming the EDA column is the first column in the DataFrame
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Initialize and train the Random Forest regression model
+rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
+rf_model.fit(X_train, y_train)
+
+# Make predictions
+y_pred = rf_model.predict(X_test)
+
+# Plot the filtered EDA and the predicted values
+plt.plot(X, y, color='blue', label='Filtered EDA')
+plt.plot(X_test, y_pred, color='green', label='Predicted EDA')  # Change color to green
+plt.xlabel('Time (min)')
+plt.ylabel('EDA (μS)')
+plt.title('Filtered EDA and Predicted Values (Random Forest)')
+plt.legend()
+plt.grid(alpha=0.5)
+plt.show()
+
+# Drop rows with missing values
+df = pd.concat([dfa_filtered, df1_filtered, df2_filtered], ignore_index=True, axis = 1 )
+df = df.T.reset_index(drop=True).T
+display(df.describe())
+df.dropna(inplace=True)
+
+# Set the feature matrix X and target vector y
+X = np.arange(len(df)).reshape(-1, 1)
+y = df.iloc[:, 0]  # Assuming the target variable is in the first column
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Initialize and train the Random Forest regression model
+rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
+rf_model.fit(X_train, y_train)
+
+# Make predictions
+y_pred = rf_model.predict(X_test)
+
+# Plot the target variable and the predicted values
+plt.plot(X, y, color='blue', label='Target Variable')
+plt.plot(X_test, y_pred, color='green', label='Predicted Values')  # Change color to green
+plt.xlabel('Time')
+plt.ylabel('Value')
+plt.title('Random Forest Regression')
+plt.legend()
+plt.grid(alpha=0.5)
+plt.show()
+
+#insert column specifically for labels
+df.insert(3,3,0)
+display(df.describe())
+
+df = pd.concat([dfa_filtered, df1_filtered, df2_filtered], ignore_index=True, axis = 1 )
+# Set the feature matrix X and target vector y for experiment_df
+X_experiment = experiment_df.iloc[:, :3]
+y_experiment = experiment_df.iloc[:, 3]
+
+# Split the data into training and testing sets for experiment_df
+X_train_experiment, X_test_experiment, y_train_experiment, y_test_experiment = train_test_split(
+    X_experiment, y_experiment, test_size=0.2, random_state=42
+)
+
+# Initialize and train the Random Forest regression model for experiment_df
+rf_model_experiment = RandomForestRegressor(n_estimators=100, random_state=42)
+rf_model_experiment.fit(X_train_experiment, y_train_experiment)
+
+# Make predictions for experiment_df
+y_pred_experiment = rf_model_experiment.predict(X_test_experiment)
+
+# Plot the target variable and the predicted values for experiment_df
+plt.plot(X_experiment.index, y_experiment, color='blue', label='Target Variable')
+plt.plot(X_test_experiment.index, y_pred_experiment, color='green', label='Predicted Values')
+plt.xlabel('Time')
+plt.ylabel('Value')
+plt.title('Random Forest Regression - experiment_df')
+plt.legend()
+plt.grid(alpha=0.5)
+plt.show()
+
+# Repeat the same steps for experiment1_df
+X_experiment1 = experiment1_df.iloc[:, :3]
+y_experiment1 = experiment1_df.iloc[:, 3]
+
+X_train_experiment1, X_test_experiment1, y_train_experiment1, y_test_experiment1 = train_test_split(
+    X_experiment1, y_experiment1, test_size=0.2, random_state=42
+)
+
+rf_model_experiment1 = RandomForestRegressor(n_estimators=100, random_state=42)
+rf_model_experiment1.fit(X_train_experiment1, y_train_experiment1)
+
+y_pred_experiment1 = rf_model_experiment1.predict(X_test_experiment1)
+
+plt.plot(X_experiment1.index, y_experiment1, color='blue', label='Target Variable')
+plt.plot(X_test_experiment1.index, y_pred_experiment1, color='green', label='Predicted Values')
+plt.xlabel('Time')
+plt.ylabel('Value')
+plt.title('Random Forest Regression - experiment1_df')
+plt.legend()
+plt.grid(alpha=0.5)
+plt.show()
+
+# Repeat the same steps for shuffled DataFrame
+X_shuffled = shuffled.iloc[:, :3]
+y_shuffled = shuffled.iloc[:, 3]
+
+X_train_shuffled, X_test_shuffled, y_train_shuffled, y_test_shuffled = train_test_split(
+    X_shuffled, y_shuffled, test_size=0.2, random_state=42
+)
+
+rf_model_shuffled = RandomForestRegressor(n_estimators=100, random_state=42)
+rf_model_shuffled.fit(X_train_shuffled, y_train_shuffled)
+
+y_pred_shuffled = rf_model_shuffled.predict(X_test_shuffled)
+
+plt.plot(X_shuffled.index, y_shuffled, color='blue', label='Target Variable')
+plt.plot(X_test_shuffled.index, y_pred_shuffled, color='green', label='Predicted Values')
+plt.xlabel('Time')
+plt.ylabel('Value')
+plt.title('Random Forest Regression - shuffled')
+plt.legend()
+plt.grid(alpha=0.5)
+plt.show()
+
+experiment_df = df
+
+#duration (labels) of anxiety duration (both anticipation and reactive, labelled '1')
+experiment_df[3][2820:5299] = 1
+        
+display(experiment_df[3].value_counts()) 
+#removing the data after the task was finished
+experiment_df = experiment_df.drop(experiment_df.index[5299:])
+
+#experiment 1 - removing the first 2 mins of the baseline period to account for acclimisation
+experiment1_df = experiment_df.drop(experiment_df.index[:480])
+display(experiment1_df[3].value_counts())
+experiment1_df.to_csv("experiment_1.csv") 
+
+#experiment 3 - removing baseline period
+experiment3_df = experiment_df.drop(experiment_df.index[:2820])
+display(experiment3_df[3].value_counts())
+#shuffling and extracting a set number of samples
+idx = np.random.permutation(experiment3_df.index)
+shuffled = experiment3_df.reindex(idx, axis=0)
+shuffled = shuffled.reset_index(drop=True)
+shuffled = shuffled.drop(shuffled.index[1667:])
+shuffled.to_csv("experiment_3.csv")
+
+import matplotlib.pyplot as plt
+
+fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(5, 1)
+
+ax1.set_title('Combined Physiological Data and Experiment Labels (1 & 2)', fontsize=15)
+
+experiment1_df[0].plot(ax=ax1, legend=False, color='indigo')
+ax1.yaxis.set_label_text("HR (BPM)")
+ax1.xaxis.set_label_text('Time (min)')
+ax1.grid(which='both', alpha=0.5)
+
+experiment1_df[1].plot(ax=ax2, legend=False, color='indigo')
+ax2.yaxis.set_label_text("ST (°C)")
+ax2.xaxis.set_label_text('Time (min)')
+ax2.grid(which='both', alpha=0.5)
+
+experiment1_df[2].plot(ax=ax3, legend=False, color='indigo')
+ax3.yaxis.set_label_text("Range Corrected EDA (μS)")
+ax3.xaxis.set_label_text('Time (min)')
+ax3.grid(which='both', alpha=0.5)
+
+experiment1_df[3].plot(ax=ax4, legend=False, color='indigo')
+ax4.yaxis.set_label_text("Experiment (1) labels")
+ax4.xaxis.set_label_text('Time (min)')
+ax4.grid(which='both', alpha=0.5)
+
+experiment1_df[3].plot(ax=ax5, legend=False, color='indigo')
+ax5.yaxis.set_label_text("Experiment (2) labels")
+ax5.xaxis.set_label_text('Time (min)')
+ax5.grid(which='both', alpha=0.5)
+
+fig.set_size_inches(15, 14)
+fig.subplots_adjust(hspace=0.4)
+
+plt.show()
+
+import seaborn as sns
+
+labeldata = ['HR', 'ST', 'EDA', 'Experiment Labels']
+corr_matrix = experiment1_df.corr(method='pearson')
+sns.heatmap(corr_matrix, vmin=0, vmax=1, annot=True, cmap='twilight', yticklabels=labeldata, xticklabels=labeldata)
+plt.title('Correlation Heatmap - Experiment 2')
+plt.show()
